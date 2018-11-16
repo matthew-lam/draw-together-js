@@ -1,26 +1,21 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
+// App.js
+
+import React, { Component, Fragment } from 'react';
 import './App.css';
+import Canvas from './canvas';
+import ColorPalette from './colorpalette';
 
 class App extends Component {
+
   render() {
     return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
+      <Fragment>
+        <h3 style={{ textAlign: 'center' }}>Cooperative Paint</h3>
+        <div className="main">
+          <Canvas />
+
+        </div>
+      </Fragment>
     );
   }
 }
