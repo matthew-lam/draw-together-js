@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import ColorPalette from './colorpalette';
+import ActionButton from './actionbutton';
 
 // Based off of Pusher's tutorial
 
@@ -9,6 +10,7 @@ class Canvas extends React.Component {
   isPainting = false;
   previousPosition = {offsetX : 0, offsetY : 0};
   lines = [];
+  strokes = [];
 
   constructor(props) {
     super(props);
@@ -25,6 +27,14 @@ class Canvas extends React.Component {
     this.setState({ setLineColor: lineColor });
   }
 
+  clearCanvasCallback = () => {
+    this.hardClearCanvas();
+  }
+
+  undoCanvasCallback = () => {
+    this.undoStroke();
+  }
+
   onMouseDown({nativeEvent}) {
     const {offsetX, offsetY} = nativeEvent;
     this.isPainting = true;
@@ -32,67 +42,82 @@ class Canvas extends React.Component {
   }
 
   onMouseMove({nativeEvent}) {
+    // Records mouse movement and stores it as an object with properties denoting the start and end position of incremental mouse movements.
+    // The lines array stores all the mouse movements and is not the whole line itself. Stroke array is used to store the whole line drawn by user.
     if (this.isPainting) {
       const {offsetX, offsetY} = nativeEvent;
       const offsetPositions = {offsetX, offsetY};
       // Setting the start and stop position.
       const positionData = {
         start: { ...this.previousPosition},
-        end: { ...offsetPositions}, // Figure out if this is necessary, instead of just putting nativeEvent or offsetPositions.
+        end: { ...offsetPositions}, 
       };
-      // Adding line position to an array.
       this.lines = this.lines.concat(positionData);
-      this.paint(this.previousPosition, offsetPositions);
+      this.paint(this.previousPosition, offsetPositions, this.state.setLineColor);
     }
   }
 
   endPaintEvent() {
-    // Fail-safe check.
+    // Fail-safe check -- checks if mouse is still pressed down and user is still painting.
     if (this.isPainting) {
       this.isPainting = false;
+
+      // Each user stroke is contained in an array for editing purposes (undo, clear, etc.).
+      this.strokes.push(this.lines);
+      this.lines = [];
     }
   }
 
-  paint(startPosition, endPosition) {
-    const { offsetX, offsetY } = endPosition;
+  paint(startPosition, endPosition, lineColor) {
     const { offsetX: x, offsetY: y} = startPosition;
+    const { offsetX, offsetY } = endPosition;
      
     this.ctx.beginPath();
     if(this.state.setLineColor == null){
       this.state.setLineColor = '#FFFF00';
     }
-    this.ctx.strokeStyle = this.state.setLineColor;
+    this.ctx.strokeStyle = lineColor;
     this.ctx.moveTo(x, y);
     this.ctx.lineTo(offsetX, offsetY);
     this.ctx.stroke();
     this.previousPosition = { offsetX, offsetY };
+  }
 
+  undoStroke(){  
+    this.strokes.pop();
+
+    this.softClearCanvas();
+
+    for(var i = 0; i < this.strokes.length; i++){
+      for(var j = 0; j < this.strokes[i].length; j++){
+        this.paint(this.strokes[i][j].start, this.strokes[i][j].end, this.state.lineColor);
+      }
+    }
+  }
+
+  softClearCanvas(){
+    // Used for undo.
+    // Clears canvas to be ready for undo-ing last stroke. 
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.lines = [];
+  }
+
+  hardClearCanvas(){
+    // Used for clearing canvas.
+    // Clears canvas and all associated strokes inputted by users.
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.lines = [];
+    this.strokes = [];
   }
 
   componentDidMount() {
-    // Setting up canvas element properties. 
-    // Canvas is instantiated through a tag in the render function.
+    // Setting up canvas properties. 
     this.canvas.width = window.innerWidth;
     this.canvas.height = window.innerHeight - 150;
     this.ctx = this.canvas.getContext('2d');
     this.ctx.lineJoin = 'round';
     this.ctx.lineCap = 'round';
     this.ctx.lineWidth = 5;
-
-    var canvasElement = document.createElement("canvasDOM");
-    document.body.appendChild(canvasElement);
-    // Apparently Canvas isn't added into DOM tree?????????
-  }
-
-  clearCanvas(){
-    this.canvasCtx = document.getElementById(this.canvas);
-    var all = document.getElementsByTagName("*");
-    //alert(this.canvasCtx);
-
-    for(var i = 0, max = all.length; i < max; i++){
-      alert(all[i]);
-    }
-
   }
 
   render () {
@@ -116,9 +141,8 @@ class Canvas extends React.Component {
         <ColorPalette callbackFromParent = {this.colorCallback} lineColor='#00FF00' circleX={25} circleY={30}/>
         <ColorPalette callbackFromParent = {this.colorCallback} lineColor='#0000FF' circleX={25} circleY={30}/>
         <ColorPalette callbackFromParent = {this.colorCallback} lineColor='#FFFF00' circleX={25} circleY={30}/>
-      
-        <button onClick = {this.clearCanvas()}> This button </button>
-
+        <ActionButton callbackFromParent = {this.clearCanvasCallback} buttonName='Clear'/>
+        <ActionButton callbackFromParent = {this.undoCanvasCallback} buttonName ='Undo'/>
       </div>
 
       </div>
@@ -128,9 +152,6 @@ class Canvas extends React.Component {
 }
 
 // Extend functionality to add:
-// Color palette
-// Clear button
-// Undo button
 // Server-side & cooperative drawing
 
 export default Canvas;

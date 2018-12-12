@@ -10,14 +10,15 @@ class App extends Component {
   render() {
     return (
       <Fragment>
-        <h3 style={{ textAlign: 'center' }}>Cooperative Paint</h3>
+        <h3 style={{ textAlign: 'center' }}>Cooperative Paint -- an exercise in learning front-end and back-end js</h3>
         <div className="main">
           <Canvas />
-
         </div>
       </Fragment>
     );
   }
+
+
 }
 
 export default App;
