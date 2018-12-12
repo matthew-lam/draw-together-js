@@ -151,6 +151,9 @@ class Canvas extends React.Component {
   }
 }
 
+// How to get previous state for undo bug? Bug - Undo re-draws everything with currently selected color instead of previously selected color.
+// Solution: Implement a stack-like state?
+
 // Extend functionality to add:
 // Server-side & cooperative drawing
 
