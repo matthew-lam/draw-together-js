@@ -7,6 +7,7 @@ import ActionButton from './actionbutton';
 class Canvas extends React.Component {
   
   // Class properties
+  // 'strokes' is used for movement of mouse while drawing while 'lines' is strictly used for drawing methods.
   isPainting = false;
   previousPosition = {offsetX : 0, offsetY : 0};
   lines = [];
@@ -56,6 +57,10 @@ class Canvas extends React.Component {
       this.paint(this.previousPosition, offsetPositions, this.state.setLineColor);
     }
   }
+
+  // Experiment sending data after this.paint(...), see how that works out?
+  // The trouble with sending data after ending paint event tis that only strokes will be seen and not real time user movement.
+  // Undo, clear and draw will all need to send data to each other... How does it deal with rt drawing and rt clear / undo?
 
   endPaintEvent() {
     // Fail-safe check -- checks if mouse is still pressed down and user is still painting.
