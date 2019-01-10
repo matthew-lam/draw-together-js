@@ -1,5 +1,6 @@
 // Based off of Medium.com -- Node.js & WebSocket tutorial.
 
+
 var webSocketServer = require('websocket').server;
 var http = require('http');
 
@@ -39,19 +40,42 @@ wsServer.on('request', function(request) {
 
 	// Ensures that current state of canvas at a given time is sent to newly connected users.
 	if (strokes.length > 0){
-		connection.sendUTF(JSON.stringify({ type: 'strokes', data: strokes}));
+		connection.sendUTF(JSON.stringify({ type: 'initStrokes', data: strokes}));
 	}
 
-	// User draws a line
+	// Message sent -- a message can be any type of data sent by the client.
 	connection.on('message', function(message) {
 		// Unpacking stroke data from sent message. The message is packed similarly to as it is sent -- as a custom typed JSON.
+		// Custom JSON types are used to diffrentiate between messages received by the client or server and to take action accordingly.
 		try{
-
+			var jsonMessage = JSON.parse(message.data);
 		} catch (e) {
-			console.log('JSON data invalid: ', )
+			console.log('JSON data invalid: ', message.data);
+			return;
+		}
+
+		if(jsonMessage.type == 'strokes'){
+			// Only one stroke is sent at a time through the server.
+			strokeData = jsonMessage.data; 
+			// Checking if the stroke may have accidentally been duplicated (optimisation).
+			if(strokes.includes(strokeData)){
+				console.log("Stroke duplicate. Do nothing.");
+			}
+			else{
+				strokes.push(strokeData);
+				var newCanvasState = JSON.stringify({ type: 'strokes', data: strokes});
+				// Broadcast new state of canvas to all connected clients.
+				for(var i = 0; i < clients.length; i++){
+					clients[i].sendUTF(newCanvasState);
+				}	
+			}
 		}
 	});
 
+	connection.on('close', function(connection) {
+		// Removes users from list of currently connected clients. Ensures that only connected clients are sent data.
+		clients.splice(index, 1);
+	})
 
 	// So, server.js should hold the original 'strokes' list
 		// server.js starts off with a blank list for 'strokes'.
@@ -61,6 +85,5 @@ wsServer.on('request', function(request) {
 			// Then tell server to send 'strokes' array to all clients in server.
 			// Finally, overwrite all 'strokes' list for clients and re-draw canvas. Clients should listen for that.
 			// WHEN LOTS OF LINES ARE PRESENT, THERE WILL BE LAG. Optimisation improvements later.
-
 
 });

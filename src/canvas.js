@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ColorPalette from './colorpalette';
 import ActionButton from './actionbutton';
+import './client'
 
 // Based off of Pusher's tutorial
 
@@ -58,10 +59,6 @@ class Canvas extends React.Component {
     }
   }
 
-  // Experiment sending data after this.paint(...), see how that works out?
-  // The trouble with sending data after ending paint event tis that only strokes will be seen and not real time user movement.
-  // Undo, clear and draw will all need to send data to each other... How does it deal with rt drawing and rt clear / undo?
-
   endPaintEvent() {
     // Fail-safe check -- checks if mouse is still pressed down and user is still painting.
     if (this.isPainting) {
@@ -69,6 +66,7 @@ class Canvas extends React.Component {
 
       // Each user stroke is contained in an array for editing purposes (undo, clear, etc.).
       this.strokes.push(this.lines);
+      this.sendServerData();
       this.lines = [];
     }
   }
@@ -90,9 +88,11 @@ class Canvas extends React.Component {
 
   undoStroke(){  
     this.strokes.pop();
-
     this.softClearCanvas();
+    this.redrawStrokes();
+  }
 
+  redrawStrokes(){
     for(var i = 0; i < this.strokes.length; i++){
       for(var j = 0; j < this.strokes[i].length; j++){
         this.paint(this.strokes[i][j].start, this.strokes[i][j].end, this.state.lineColor);
@@ -115,6 +115,31 @@ class Canvas extends React.Component {
     this.strokes = [];
   }
 
+  // Sending data -- only want to send the last drawn line by the user to push into the server-wide strokes array.
+  sendServerData(){
+    // Pack into JSON form to be read from server code.
+    var dataToSend = [];
+    dataToSend.push(this.strokes[-1]);
+    var sendJSON = JSON.stringify({ type: 'outgoingStrokes', data: dataToSend});
+    // Add client method here...
+    client.connection.send(sendJSON);
+    console.log('wrapper method called');
+  }
+
+  // Wrapper methods to communicate with client.js and backend code.
+  serverDrawData(strokesToDraw){
+    // Receive data of drawn lines from other users from the server.
+    // Exclude duplicates or 'self-broadcasted' data.
+    if(this.strokes.includes(strokesToDraw[0])){
+      // Do nothing.
+    }
+    else{
+      this.strokes.push(strokesToDraw);
+      this.redrawStrokes();  
+    }
+  }
+
+  // React specific methods.
   componentDidMount() {
     // Setting up canvas properties. 
     this.canvas.width = window.innerWidth;
