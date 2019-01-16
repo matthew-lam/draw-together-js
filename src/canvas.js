@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import ColorPalette from './colorpalette';
 import ActionButton from './actionbutton';
-import './client'
 
 // Based off of Pusher's tutorial
 
@@ -122,7 +121,7 @@ class Canvas extends React.Component {
     dataToSend.push(this.strokes[-1]);
     var sendJSON = JSON.stringify({ type: 'outgoingStrokes', data: dataToSend});
     // Add client method here...
-    client.connection.send(sendJSON);
+    // client.connection.send(sendJSON);
     console.log('wrapper method called');
   }
 
