@@ -9,16 +9,15 @@ var app = require('express')();
 var server = require('http').Server(app);
 var io = require('socket.io')(server);
 
-server.listen(3000, function(){
-	console.log('Listening on port 3000');
-});
-
 app.get('/', function(req, res){
-	res.sendFile(__dirname + '../public/index.html');
+	// Do nothing.
 });
 
 io.on('connection', function(socket){
 	console.log('user connected');
 });
 
+server.listen(80, function(){
+	console.log('Listening on port 80');
+});
 

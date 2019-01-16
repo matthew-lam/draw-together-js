@@ -23,7 +23,7 @@ class App extends Component {
 
   componentDidMount() {
     // Opening socket when components are loaded onto the page.
-    const socket = io('http://localhost:3000');
+    const  socket = io('http://localhost');
   }
 
 }
