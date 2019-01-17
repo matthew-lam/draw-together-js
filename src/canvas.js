@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import ColorPalette from './colorpalette';
 import ActionButton from './actionbutton';
+import App from './App';
 
 // Based off of Pusher's tutorial
 
@@ -21,6 +22,7 @@ class Canvas extends React.Component {
     this.endPaintEvent = this.endPaintEvent.bind(this);
     this.state = {
       setLineColor: null,
+      // strokeState: this.strokes
     };
   }
 
@@ -86,6 +88,7 @@ class Canvas extends React.Component {
   }
 
   undoStroke(){  
+    // Need to do server side stuff with this to ensure it works for everyone.
     this.strokes.pop();
     this.softClearCanvas();
     this.redrawStrokes();
@@ -107,6 +110,7 @@ class Canvas extends React.Component {
   }
 
   hardClearCanvas(){
+    // Need to do server side stuff with this to ensure it works for everyone.
     // Used for clearing canvas.
     // Clears canvas and all associated strokes inputted by users.
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -121,8 +125,7 @@ class Canvas extends React.Component {
     dataToSend.push(this.strokes[-1]);
     var sendJSON = JSON.stringify({ type: 'outgoingStrokes', data: dataToSend});
     // Add client method here...
-    // client.connection.send(sendJSON);
-    console.log('wrapper method called');
+    App.emitSendData(sendJSON);
   }
 
   // Wrapper methods to communicate with client.js and backend code.
