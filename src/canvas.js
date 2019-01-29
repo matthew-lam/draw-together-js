@@ -2,17 +2,14 @@ import React, { Component } from 'react';
 import ColorPalette from './colorpalette';
 import ActionButton from './actionbutton';
 import App from './App';
-
-// Based off of Pusher's tutorial
+import io from 'socket.io-client';
 
 class Canvas extends React.Component {
-  
-  // Class properties
-  // 'strokes' is used for movement of mouse while drawing while 'lines' is strictly used for drawing methods.
-  isPainting = false;
+
   previousPosition = {offsetX : 0, offsetY : 0};
   lines = [];
-  strokes = [];
+  isPainting = false;
+  socket = io('http://localhost');
 
   constructor(props) {
     super(props);
@@ -22,7 +19,6 @@ class Canvas extends React.Component {
     this.endPaintEvent = this.endPaintEvent.bind(this);
     this.state = {
       setLineColor: null,
-      // strokeState: this.strokes
     };
   }
 
@@ -31,7 +27,7 @@ class Canvas extends React.Component {
   }
 
   clearCanvasCallback = () => {
-    this.hardClearCanvas();
+    this.clearCanvas();
   }
 
   undoCanvasCallback = () => {
@@ -41,10 +37,12 @@ class Canvas extends React.Component {
   onMouseDown({nativeEvent}) {
     const {offsetX, offsetY} = nativeEvent;
     this.isPainting = true;
+    this.setState()
     this.previousPosition = {offsetX, offsetY};
   }
 
   onMouseMove({nativeEvent}) {
+    // Experiment with adding this.sendServerData() at the end of this method for REAL-TIME rendering.
     // Records mouse movement and stores it as an object with properties denoting the start and end position of incremental mouse movements.
     // The lines array stores all the mouse movements and is not the whole line itself. Stroke array is used to store the whole line drawn by user.
     if (this.isPainting) {
@@ -66,7 +64,7 @@ class Canvas extends React.Component {
       this.isPainting = false;
 
       // Each user stroke is contained in an array for editing purposes (undo, clear, etc.).
-      this.strokes.push(this.lines);
+      // this.strokes.push(this.lines);
       this.sendServerData();
       this.lines = [];
     }
@@ -78,7 +76,8 @@ class Canvas extends React.Component {
      
     this.ctx.beginPath();
     if(this.state.setLineColor == null){
-      this.state.setLineColor = '#FFFF00';
+      //this.state.setLineColor = '#FFFF00';
+      this.setState({setLineColor: '#FFFF00'});
     }
     this.ctx.strokeStyle = lineColor;
     this.ctx.moveTo(x, y);
@@ -87,61 +86,36 @@ class Canvas extends React.Component {
     this.previousPosition = { offsetX, offsetY };
   }
 
-  undoStroke(){  
-    // Need to do server side stuff with this to ensure it works for everyone.
-    this.strokes.pop();
-    this.softClearCanvas();
-    this.redrawStrokes();
-  }
 
-  redrawStrokes(){
-    for(var i = 0; i < this.strokes.length; i++){
-      for(var j = 0; j < this.strokes[i].length; j++){
-        this.paint(this.strokes[i][j].start, this.strokes[i][j].end, this.state.lineColor);
+  redrawStrokes(strokes){
+    
+    for(var i = 0; i < strokes.length; i++){
+      for(var j = 0; j < strokes[i].length; j++){
+        for(var k = 0; k < strokes[i][j].length; k++){
+          this.paint(strokes[i][j][k].start, strokes[i][j][k].end, this.state.setLineColor);
+        }
       }
     }
   }
 
-  softClearCanvas(){
-    // Used for undo.
-    // Clears canvas to be ready for undo-ing last stroke. 
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.lines = [];
+  undoStroke(){  
+    // RE-WRITE: Send message to server to tell server to pop element from strokes array and re-broadcast to synchronise.
+      this.socket.emit("undoStroke");
   }
 
-  hardClearCanvas(){
-    // Need to do server side stuff with this to ensure it works for everyone.
-    // Used for clearing canvas.
-    // Clears canvas and all associated strokes inputted by users.
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.lines = [];
-    this.strokes = [];
+  clearCanvas(){
+    // RE-WRITE: Send message to server to tell server to clear all elements from strokes array and re-broadcast to synchronise.
+      this.socket.emit("clearCanvas");
   }
 
   // Sending data -- only want to send the last drawn line by the user to push into the server-wide strokes array.
   sendServerData(){
     // Pack into JSON form to be read from server code.
     var dataToSend = [];
-    dataToSend.push(this.strokes[-1]);
-    var sendJSON = JSON.stringify({ type: 'outgoingStrokes', data: dataToSend});
-    // Add client method here...
-    App.emitSendData(sendJSON);
+    dataToSend.push(this.lines);
+    this.emitSendData(dataToSend);
   }
 
-  // Wrapper methods to communicate with client.js and backend code.
-  serverDrawData(strokesToDraw){
-    // Receive data of drawn lines from other users from the server.
-    // Exclude duplicates or 'self-broadcasted' data.
-    if(this.strokes.includes(strokesToDraw[0])){
-      // Do nothing.
-    }
-    else{
-      this.strokes.push(strokesToDraw);
-      this.redrawStrokes();  
-    }
-  }
-
-  // React specific methods.
   componentDidMount() {
     // Setting up canvas properties. 
     this.canvas.width = window.innerWidth;
@@ -150,10 +124,22 @@ class Canvas extends React.Component {
     this.ctx.lineJoin = 'round';
     this.ctx.lineCap = 'round';
     this.ctx.lineWidth = 5;
+    this.socket.on("connect", function(){
+      console.log("connected");
+    });
+  }
+
+  componentDidUpdate() {
+    console.log(this.props.strokes);
+    this.redrawStrokes(this.props.strokes);
+  }
+
+  emitSendData(outgoingData){
+    // Draw something first and then call this wrapper method to send data to server.
+    this.socket.emit("dataToServer", outgoingData);
   }
 
   render () {
-
     return (
 
       <div>
@@ -175,6 +161,7 @@ class Canvas extends React.Component {
         <ColorPalette callbackFromParent = {this.colorCallback} lineColor='#FFFF00' circleX={25} circleY={30}/>
         <ActionButton callbackFromParent = {this.clearCanvasCallback} buttonName='Clear'/>
         <ActionButton callbackFromParent = {this.undoCanvasCallback} buttonName ='Undo'/>
+
       </div>
 
       </div>
@@ -182,6 +169,8 @@ class Canvas extends React.Component {
     );
   }
 }
+
+
 
 // How to get previous state for undo bug? Bug - Undo re-draws everything with currently selected color instead of previously selected color.
 // Solution: Implement a stack-like state?
