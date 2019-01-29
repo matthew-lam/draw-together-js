@@ -88,7 +88,7 @@ class Canvas extends React.Component {
 
 
   redrawStrokes(strokes){
-    
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     for(var i = 0; i < strokes.length; i++){
       for(var j = 0; j < strokes[i].length; j++){
         for(var k = 0; k < strokes[i][j].length; k++){
