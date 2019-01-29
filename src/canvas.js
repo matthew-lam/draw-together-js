@@ -37,7 +37,6 @@ class Canvas extends React.Component {
   onMouseDown({nativeEvent}) {
     const {offsetX, offsetY} = nativeEvent;
     this.isPainting = true;
-    this.setState()
     this.previousPosition = {offsetX, offsetY};
   }
 
@@ -54,7 +53,8 @@ class Canvas extends React.Component {
         end: { ...offsetPositions}, 
       };
       this.lines = this.lines.concat(positionData);
-      this.paint(this.previousPosition, offsetPositions, this.state.setLineColor);
+      //this.paint(this.previousPosition, offsetPositions, this.state.setLineColor);
+      this.sendServerData();
     }
   }
 
@@ -62,10 +62,7 @@ class Canvas extends React.Component {
     // Fail-safe check -- checks if mouse is still pressed down and user is still painting.
     if (this.isPainting) {
       this.isPainting = false;
-
-      // Each user stroke is contained in an array for editing purposes (undo, clear, etc.).
-      // this.strokes.push(this.lines);
-      this.sendServerData();
+      //this.sendServerData(); // UNCOMMENT TO DISABLE REAL-TIME RENDERING
       this.lines = [];
     }
   }
@@ -76,7 +73,6 @@ class Canvas extends React.Component {
      
     this.ctx.beginPath();
     if(this.state.setLineColor == null){
-      //this.state.setLineColor = '#FFFF00';
       this.setState({setLineColor: '#FFFF00'});
     }
     this.ctx.strokeStyle = lineColor;
@@ -88,7 +84,9 @@ class Canvas extends React.Component {
 
 
   redrawStrokes(strokes){
+    // For real time rendering (especially), this piece of code is extremely problematic. O(n^3) time.
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    console.log(strokes.length);
     for(var i = 0; i < strokes.length; i++){
       for(var j = 0; j < strokes[i].length; j++){
         for(var k = 0; k < strokes[i][j].length; k++){
@@ -99,12 +97,10 @@ class Canvas extends React.Component {
   }
 
   undoStroke(){  
-    // RE-WRITE: Send message to server to tell server to pop element from strokes array and re-broadcast to synchronise.
       this.socket.emit("undoStroke");
   }
 
   clearCanvas(){
-    // RE-WRITE: Send message to server to tell server to clear all elements from strokes array and re-broadcast to synchronise.
       this.socket.emit("clearCanvas");
   }
 
@@ -169,13 +165,5 @@ class Canvas extends React.Component {
     );
   }
 }
-
-
-
-// How to get previous state for undo bug? Bug - Undo re-draws everything with currently selected color instead of previously selected color.
-// Solution: Implement a stack-like state?
-
-// Extend functionality to add:
-// Server-side & cooperative drawing
 
 export default Canvas;
