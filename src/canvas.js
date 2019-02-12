@@ -83,15 +83,26 @@ class Canvas extends React.Component {
   }
 
 
+  // redrawStrokes(strokes){
+  //   // For real time rendering (especially), this piece of code is extremely problematic. O(n^3) time.
+  //   this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  //   console.log(strokes.length);
+  //   for(var i = 0; i < strokes.length; i++){
+  //     for(var j = 0; j < strokes[i].length; j++){
+  //       for(var k = 0; k < strokes[i][j].length; k++){
+  //         this.paint(strokes[i][j][k].start, strokes[i][j][k].end, this.state.setLineColor);
+  //       }
+  //     }
+  //   }
+  // }
+
   redrawStrokes(strokes){
-    // For real time rendering (especially), this piece of code is extremely problematic. O(n^3) time.
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     console.log(strokes.length);
+    
     for(var i = 0; i < strokes.length; i++){
       for(var j = 0; j < strokes[i].length; j++){
-        for(var k = 0; k < strokes[i][j].length; k++){
-          this.paint(strokes[i][j][k].start, strokes[i][j][k].end, this.state.setLineColor);
-        }
+        this.paint(strokes[i][j].start, strokes[i][j].end, this.state.setLineColor);
       }
     }
   }
@@ -126,13 +137,22 @@ class Canvas extends React.Component {
   }
 
   componentDidUpdate() {
-    console.log(this.props.strokes);
-    this.redrawStrokes(this.props.strokes);
+    let mergedProps = this.mergeProps(this.props.strokes);
+    console.log('after', mergedProps);
+    this.redrawStrokes(mergedProps);
   }
 
   emitSendData(outgoingData){
     // Draw something first and then call this wrapper method to send data to server.
     this.socket.emit("dataToServer", outgoingData);
+  }
+
+  mergeProps(props) {
+    let mergedArray = [];
+    for (var i = 0; i < props.length; i++) {
+      mergedArray = mergedArray.concat(props[i]);
+    }
+    return mergedArray;
   }
 
   render () {
