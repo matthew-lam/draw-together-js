@@ -25,7 +25,7 @@ class App extends Component {
 
     return (
       <Fragment>
-        <h3 style={{ textAlign: 'center' }}>Cooperative Paint -- an exercise in learning front-end and back-end js</h3>
+        <h3 style={{ textAlign: 'center' }}>Paint online -- an exercise in web app development</h3>
         
           <div className="main">
             <Canvas strokes = {this.state.strokes}/>

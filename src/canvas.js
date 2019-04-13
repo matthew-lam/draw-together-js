@@ -53,8 +53,13 @@ class Canvas extends React.Component {
         end: { ...offsetPositions}, 
       };
       this.lines = this.lines.concat(positionData);
-      //this.paint(this.previousPosition, offsetPositions, this.state.setLineColor);
-      this.sendServerData();
+      // this.paint(this.previousPosition, offsetPositions, this.state.setLineColor); // UNCOMMENT WHEN REAL-TIME RENDERING IS DISABLED
+      this.sendServerData(); // UNCOMMENT TO ENABLE REAL-TIME RENDERING
+      // The problem with this (optimisation-wise) is that too many points are thrown into the 'strokes' global array.
+      // For real time rendering, EVERY single mouse movement is acted as a stroke.
+      // Whereas non real time rendering, only when the mouse is no longer held down is the movement acted as a stroke. e.g. 1 stroke in real-time rendering may equal to 100 strokes in non-real time rendering.
+      // This causes a lot of problems, mainly performance issues.
+      // When re-visiting this project, think of how to rectify this problem.
     }
   }
 
@@ -98,7 +103,7 @@ class Canvas extends React.Component {
 
   redrawStrokes(strokes){
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    console.log(strokes.length);
+    // console.log(strokes.length);
     
     for(var i = 0; i < strokes.length; i++){
       for(var j = 0; j < strokes[i].length; j++){
@@ -138,7 +143,7 @@ class Canvas extends React.Component {
 
   componentDidUpdate() {
     let mergedProps = this.mergeProps(this.props.strokes);
-    console.log('after', mergedProps);
+    // console.log('after', mergedProps);
     this.redrawStrokes(mergedProps);
   }
 
